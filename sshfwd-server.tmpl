@@ -73,7 +73,6 @@ fn_start() {
             echo "tunnel 0 (to $t0_remote_host) started"
         else
             echo "failed to start tunnel 0 (to $t0_remote_host)"
-            return 1
         fi
     else
         echo "tunnel 0 (to $t0_remote_host) is already running (pid=$proc0)"
@@ -85,7 +84,6 @@ fn_start() {
             echo "tunnel 1 (to $t1_remote_host) started"
         else
             echo "failed to start tunnel 1 (to $t1_remote_host)"
-            return 1
         fi
     else
         echo "tunnel 1 (to $t1_remote_host) is already running (pid=$proc1)"
@@ -97,7 +95,6 @@ fn_start() {
             echo "tunnel 2 (to $t2_remote_host) started"
         else
             echo "failed to start tunnel 2 (to $t2_remote_host)"
-            return 1
         fi
     else
         echo "tunnel 2 (to $t2_remote_host) is already running (pid=$proc2)"
@@ -109,7 +106,6 @@ fn_start() {
             echo "tunnel 3 (to $t3_remote_host) started"
         else
             echo "failed to start tunnel 3 (to $t3_remote_host)"
-            return 1
         fi
     else
         echo "tunnel 3 (to $t3_remote_host) is already running (pid=$proc3)"

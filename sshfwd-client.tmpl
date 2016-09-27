@@ -41,15 +41,16 @@ fn_get_procs
 
 fn_start() {
     for i in "${ports[@]}"; do
-        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
-        if [ "" = "$proc" ]; then
-            su -l $user -c "$cmd_ssh -N -C -f -L $listen_address:$i:$forwarded_address:$i -p $remote_port $remote_user@$remote_host"
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$procs" ]; then
+            su -l $user -c "$cmd_ssh -N -C -f -L $listen_address:$i:$forwarded_address:$i -o PreferredAuthentications=publickey -p $remote_port $remote_user@$remote_host"
             if [ $? = 0 ]; then
                 echo "tunnel (on port $i) started"
             else
-                echo "failed to start tunnel 1 (on port $i)"
-                return 1
+                echo "failed to start tunnel on port $i"
             fi
+        else
+            echo "tunnel (on port $i) is already running"
         fi
     done
 }
@@ -67,8 +68,8 @@ fn_stop() {
     fi
 
     for i in "${ports[@]}"; do
-        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
-        if [ "" = "$proc" ]; then
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$procs" ]; then
             echo "No tunnel listening on port $i"
         else
             kill $procs
@@ -97,11 +98,11 @@ fn_status() {
     fi
 
     for i in "${ports[@]}"; do
-        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
-        if [ "" = "$proc" ]; then
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$procs" ]; then
             echo "No tunnel listening on port $i"
         else
-            echo "Tunnel listening on port $i"
+            echo "tunnel listening on port $i"
         fi
     done
 
