@@ -1,0 +1,150 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:       sshfwd-client
+# Required-Start:    $local_fs $remote_fs $network $syslog $named
+# Required-Stop:     $local_fs $remote_fs $network $syslog $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Description:       start an ssh tunnel to a sshfwd-server providing an array of tunnels
+### END INIT INFO
+
+if [ "$(/usr/bin/whoami)" != "root" ] ; then
+    echo "Only super user could run this script"
+    exit 1
+fi
+
+#. /lib/lsb/init-functions
+
+#. /lib/init/vars.sh
+#. /etc/init.d/functions
+
+user=xma11
+
+cmd_ssh="/usr/bin/ssh -o ConnectTimeout=8"
+
+listen_address="127.0.0.1"
+forwarded_address="127.0.0.1"
+ports=(8888 8889)
+remote_host="1.2.3.4"
+remote_port="22"
+remote_user="someone"
+
+proc_main=""
+procs=""
+
+fn_get_procs() {
+    proc_main=`ps aux | grep sshfwd-client | grep start | grep -v "$$" | grep -v grep | awk '{printf "%s ",$2}'`
+}
+
+fn_get_procs
+
+fn_start() {
+    for i in "${ports[@]}"; do
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$proc" ]; then
+            su -l $user -c "$cmd_ssh -N -C -f -L $listen_address:$i:$forwarded_address:$i -p $remote_port $remote_user@$remote_host"
+            if [ $? = 0 ]; then
+                echo "tunnel (on port $i) started"
+            else
+                echo "failed to start tunnel 1 (on port $i)"
+                return 1
+            fi
+        fi
+    done
+}
+
+fn_stop() {
+    if [ "" = "$proc_main" ]; then
+        echo "sshfwd-client is not running"
+    else
+        kill $proc_main
+        if [ $? = 0 ]; then
+            echo "sshfwd-client stopped"
+        else
+            echo "failed stop sshfwd-client"
+        fi
+    fi
+
+    for i in "${ports[@]}"; do
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$proc" ]; then
+            echo "No tunnel listening on port $i"
+        else
+            kill $procs
+            if [ $? = 0 ]; then
+                echo "tunnel on port $i stopped"
+            else
+                echo "failed to stop tunnel on port $i"
+                return 1
+            fi
+        fi
+    done
+}
+
+fn_restart() {
+    fn_stop
+    sleep 3
+    fn_get_procs
+    fn_start
+}
+
+fn_status() {
+    if [ "" = "$proc_main" ]; then
+        echo "sshfwd-client is not running"
+    else
+        echo "sshfwd-client is running (pid=$proc_main)"
+    fi
+
+    for i in "${ports[@]}"; do
+        procs=`ps aux | grep ssh | grep $i | grep $remote_user | grep $remote_host|grep $listen_address|grep remote_user| grep -v grep | awk '{printf "%s ",$2}'`
+        if [ "" = "$proc" ]; then
+            echo "No tunnel listening on port $i"
+        else
+            echo "Tunnel listening on port $i"
+        fi
+    done
+
+    echo ""
+    echo "Local port listen info:"
+    for i in "${ports[@]}"; do
+        netstat -tunlp|grep LISTEN|grep tcp|grep $i|grep $forwarded_address
+    done
+}
+
+fn_monit(){
+    echo "sshfwd-client started"
+    while :
+    do
+        sleep 57
+        fn_get_procs
+        fn_start > /dev/null 2>&1
+    done
+}
+
+fn_print_usage() {
+    echo "Usage: $0 <start|stop|restart|status>"
+    return 2
+}
+
+case $1 in
+    start)
+    fn_start
+    fn_monit &
+    ;;
+    stop)
+    fn_stop
+    ;;
+    restart)
+    fn_restart
+    ;;
+    status)
+    fn_status
+    ;;
+    *)
+    fn_print_usage
+    ;;
+esac
+
+exit 0
+
