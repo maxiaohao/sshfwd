@@ -22,15 +22,15 @@
 #
 # so you should have exactly 6 or 7(type A with password) or 8 or 9(type B with password) elements in a valid line
 # in case no password is configured in a valid line (6 for type a or 8 for type b), sshfwd would assume you have already set the server's private key properly
-# all elements should be separated by 3 consecutive underscores ('___') in a valid line
+# all elements should be separated by 3 consecutive underscores ('_#_') in a valid line
 # no space or comments are allowed in a valid line
 
 # type A examples:
-mytunnel-1___127.0.0.1___3377___1.2.3.4___22___someone1___password1
-mytunnel-2___0.0.0.0___3388___somehost2___22___someone2
-mytunnel-3___localhost___3399___5.6.7.8___22___someone3___password3
+mytunnel-1_#_127.0.0.1_#_3377_#_1.2.3.4_#_22_#_someone1_#_password1
+mytunnel-2_#_0.0.0.0_#_3388_#_somehost2_#_22_#_someone2
+mytunnel-3_#_localhost_#_3399_#_5.6.7.8_#_22_#_someone3_#_password3
 
 # type B examples:
-mytunnel-4___0.0.0.0___3388___127.0.0.1___80___somehost4___22___someone4
-mytunnel-5___localhost___3399___127.0.0.1___3306___6.7.8.9___22___someone5___password5
+mytunnel-4_#_0.0.0.0_#_3388_#_127.0.0.1_#_80_#_somehost4_#_22_#_someone4
+mytunnel-5_#_localhost_#_3399_#_127.0.0.1_#_3306_#_6.7.8.9_#_22_#_someone5_#_password5
 

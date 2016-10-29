@@ -11,7 +11,7 @@ cmd_sshpass="/usr/bin/sshpass"
 servers=()
 proc_main=""
 procs=()
-spr="___"
+spr="_#_"
 
 
 # load conf from file and validate every line
@@ -55,7 +55,7 @@ fn_get_procs() {
         else
             echo "Error: wrong ssh server conf: ${segs[@]}"
         fi
-        proc=$spr`ps -ef | grep ssh | grep ${segs[2]} | grep ${segs[3]} | grep ${segs[5]}| grep -v grep | awk '{printf "%s___",$2}'`
+        proc=$spr`ps -ef | grep ssh | grep ${segs[2]} | grep ${segs[3]} | grep ${segs[5]}| grep -v grep | awk '{printf "%s_#_",$2}'`
         procs=("${procs[@]}" "$proc")
     done
 }
