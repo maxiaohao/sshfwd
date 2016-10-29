@@ -1,0 +1,18 @@
+# this is sshfwd's conf file with every valid line in this file represents an ssh server to create a tunnel to
+# elements on a single line should be:
+#   1) tunnel_id
+#   2) local interface to bind the tunnel
+#   3) local port to bind the tunnel
+#   4) remote ssh server's ip, hostname or alias in ssh config
+#   5) remote ssh server's port
+#   6) username
+#   7) password (optional)
+# note the last element (password) is optional
+# in case no password is configured in a line, sshfwd would assume you have properly set that servers private key without password
+# so you should have exactly 6 or 7 elements in a line
+# all elements should be separated by 3 underscores ('___') in a line
+# no space or comments are allowed in a valid line
+mytunnel-1___127.0.0.1___3377___1.2.3.4___22___someone1___password1
+mytunnel-2___0.0.0.0___3388___somehost2___22___someone2
+mytunnel-3___localhost___3399___5.6.7.8___22___someone3___password3
+
