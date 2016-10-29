@@ -21,9 +21,9 @@ do
     line=`echo $line|sed 's/^ //;s/ $//'`
     ch1=${line:0:1}
     # lines starting with '#' are skipped
-    if [ "#" != "$ch1" ]; then
+    if [ "#" != "$ch1" -a "" != "$ch1" ]; then
         segs=($(echo $line|tr $spr ' '))
-        if [ ${#segs[@]} -lt 6 -o ${#segs[@]} -gt 7 ]; then
+        if [ ${#segs[@]} -lt 6 -o ${#segs[@]} -gt 9 ]; then
             echo invalid conf in line $line_nbr in $conf_file : number of elements per line should be 6 or 7!
             exit 1
         fi
@@ -41,9 +41,20 @@ fn_get_procs() {
         tunnel_id=${segs[0]}
         listen_addr=${segs[1]}
         listen_port=${segs[2]}
-        remote_host=${segs[3]}
-        remote_port=${segs[4]}
-        user=${segs[5]}
+        ssh_host=""
+        ssh_port=""
+        user=""
+        if [ ${#segs[@]} -ge 6 -a ${#segs[@]} -le 7 ]; then
+            ssh_host=${segs[3]}
+            ssh_port=${segs[4]}
+            user=${segs[5]}
+        elif [ ${#segs[@]} -ge 8 -a ${#segs[@]} -le 9 ]; then
+            ssh_host=${segs[5]}
+            ssh_port=${segs[6]}
+            user=${segs[7]}
+        else
+            echo "Error: wrong ssh server conf: ${segs[@]}"
+        fi
         proc=$spr`ps -ef | grep ssh | grep ${segs[2]} | grep ${segs[3]} | grep ${segs[5]}| grep -v grep | awk '{printf "%s___",$2}'`
         procs=("${procs[@]}" "$proc")
     done
@@ -52,18 +63,41 @@ fn_get_procs() {
 fn_get_procs
 
 
-fn_start_tunnel() {
+fn_start_tunnel_type_a() {
     tunnel_id=$1
     listen_addr=$2
     listen_port=$3
-    remote_host=$4
-    remote_port=$5
+    ssh_host=$4
+    ssh_port=$5
     user=$6
     pwd=$7
     if [ "" = "$pwd" ]; then
-        sh -c "$cmd_ssh -N -C -f -D$listen_addr:$listen_port -p $remote_port $user@$remote_host" > /dev/null 2>&1
+        sh -c "$cmd_ssh -N -C -f -D$listen_addr:$listen_port -o PreferredAuthentications=publickey -p $ssh_port $user@$ssh_host" > /dev/null 2>&1
     else
-        sh -c "$cmd_sshpass -p$pwd $cmd_ssh -N -C -f -D$listen_addr:$listen_port -p $remote_port -o PreferredAuthentications=password -o StrictHostKeyChecking=no $user@$remote_host" > /dev/null 2>&1
+        sh -c "$cmd_sshpass -p$pwd $cmd_ssh -N -C -f -D$listen_addr:$listen_port -p $ssh_port -o PreferredAuthentications=password -o StrictHostKeyChecking=no $user@$ssh_host" > /dev/null 2>&1
+    fi
+
+    if [ $? = 0 ]; then
+        echo "tunnel $tunnel_id (port = ${listen_port}) started"
+    else
+        echo "failed to start tunnel $tunnel_id"
+    fi
+}
+
+fn_start_tunnel_type_b() {
+    tunnel_id=$1
+    listen_addr=$2
+    listen_port=$3
+    forwarded_addr=$4
+    forwarded_port=$5
+    ssh_host=$6
+    ssh_port=$7
+    user=$8
+    pwd=$9
+    if [ "" = "$pwd" ]; then
+        sh -c "$cmd_ssh -N -C -f -L $listen_addr:$listen_port:$forwarded_addr:$forwarded_port -o PreferredAuthentications=publickey -p $ssh_port $user@$ssh_host" > /dev/null 2>&1
+    else
+        sh -c "$cmd_sshpass -p$pwd $cmd_ssh -N -C -f -L $listen_addr:$listen_port:$forwarded_addr:$forwarded_port -p $ssh_port -o PreferredAuthentications=password -o StrictHostKeyChecking=no $user@$ssh_host" > /dev/null 2>&1
     fi
 
     if [ $? = 0 ]; then
@@ -83,12 +117,24 @@ fn_start() {
         tunnel_id=${segs[0]}
         listen_addr=${segs[1]}
         listen_port=${segs[2]}
-        remote_host=${segs[3]}
-        remote_port=${segs[4]}
-        user=${segs[5]}
-        pwd=${segs[6]}
         if [ "" = "$pids_squashed" ]; then
-            fn_start_tunnel $tunnel_id $listen_addr $listen_port $remote_host $remote_port $user $pwd
+            if [ ${#segs[@]} -ge 6 -a ${#segs[@]} -le 7 ]; then
+                ssh_host=${segs[3]}
+                ssh_port=${segs[4]}
+                user=${segs[5]}
+                pwd=${segs[6]}
+                fn_start_tunnel_type_a $tunnel_id $listen_addr $listen_port $ssh_host $ssh_port $user $pwd
+            elif [ ${#segs[@]} -ge 8 -a ${#segs[@]} -le 9 ]; then
+                forwarded_addr=${segs[3]}
+                forwarded_port=${segs[4]}
+                ssh_host=${segs[5]}
+                ssh_port=${segs[6]}
+                user=${segs[7]}
+                pwd=${segs[8]}
+                fn_start_tunnel_type_b $tunnel_id $listen_addr $listen_port $forwarded_addr $forwarded_port $ssh_host $ssh_port $user $pwd
+            else
+                echo "Error: wrong ssh server conf: ${segs[@]}"
+            fi
         else
             echo "tunnel $tunnel_id (port = ${listen_port}) is already running: pid = $pids"
         fi
